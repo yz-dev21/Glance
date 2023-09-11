@@ -1,7 +1,5 @@
 ﻿using Spectre.Console;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows.Forms;
 
 namespace Glance
 {
@@ -14,16 +12,27 @@ namespace Glance
             BatteryInfo batteryInfo = new();
             batteryInfo.Update();
 
+            MachineInfo machineInfo = new();
+            machineInfo.Update();
+
+            CPUInfo cpuInfo = new();
+            cpuInfo.Update();
+
+            GPUInfo gpuInfo = new();
+            gpuInfo.Update();
+
             var layout = new Layout("Root")
                 .SplitColumns(
-                    new Layout("Left"),
+                    new Layout("Left")
+                        .SplitRows(
+                            new Layout(CreateCPUPanel(cpuInfo)),
+                            new Layout(CreateGPUPanel(gpuInfo))),
                     new Layout("Right")
-                .SplitRows(
-                    new Layout("Top"),
-                    new Layout("Bottom")));
-
-            layout["Top"].Update(CreateBatteryPanel(batteryInfo)).MinimumSize(5).Ratio(1);
-            layout["Right"].Ratio(1);
+                        .SplitRows(
+                            new Layout(CreateBatteryPanel(batteryInfo)).Size(5),
+                            new Layout(CreateMachinePanel(machineInfo)).Size(7),
+                            new Layout("Bottom").Ratio(2)));
+            layout["Left"].Ratio(2);
 
             while (true)
             {
@@ -39,16 +48,8 @@ namespace Glance
         static void InitWindow()
         {
             Console.OutputEncoding = Encoding.UTF8;
+            Console.CursorVisible = false;
             Console.Title = "Glance";
-
-            const int MF_BYCOMMAND = 0x00000000;
-            const int SC_MINIMIZE = 0xF020;
-            const int SC_MAXIMIZE = 0xF030;
-            const int SC_SIZE = 0xF000;
-
-            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_SIZE, MF_BYCOMMAND);        // Disable resizing
-            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_MINIMIZE, MF_BYCOMMAND);    // Disable minimizing
-            DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_MAXIMIZE, MF_BYCOMMAND);    // Disable maximizing
         }
         static Spectre.Console.Panel CreateBatteryPanel(BatteryInfo batteryInfo)
         {
@@ -71,17 +72,16 @@ namespace Glance
             batteryChart.AddItem("Else", 100 - batteryInfo.Percentage, Spectre.Console.Color.Grey37);
 
             Grid batteryGrid = new();
-
             batteryGrid.AddColumn();
             batteryGrid.AddColumn();
 
             if (batteryInfo.Charging)
             {
-                batteryGrid.AddRow(batteryChart, new Markup($"[{batteryColor.ToMarkup()}]{batteryInfo.Percentage}%[/] :battery:"));
+                batteryGrid.AddRow(batteryChart, new Markup($"[{batteryColor.ToMarkup()}]{batteryInfo.Percentage}%[/] [orange1]:high_voltage:[/]"));
             }
             else
             {
-                batteryGrid.AddRow(batteryChart, new Markup($"[{batteryColor.ToMarkup()}]{batteryInfo.Percentage}%[/]"));
+                batteryGrid.AddRow(batteryChart, new Markup($"[{batteryColor.ToMarkup()}]{batteryInfo.Percentage}%[/] :battery:"));
             }
 
             Spectre.Console.Panel batteryPanel = new(Align.Center(batteryGrid, VerticalAlignment.Top))
@@ -92,13 +92,55 @@ namespace Glance
             };
             return batteryPanel;
         }
-        [DllImport("user32.dll")]
-        public static extern int DeleteMenu(IntPtr hMenu, int nPosition, int wFlags);
+        static Spectre.Console.Panel CreateMachinePanel(MachineInfo machineInfo)
+        {
+            Grid machineGrid = new();
+            machineGrid.AddColumn();
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+            machineGrid.AddRow(new Markup($"[dim]USER[/] [bold]{machineInfo.UserName}[/]"));
+            machineGrid.AddRow(new Markup($"[dim]CODE[/] [bold]{machineInfo.DesktopName}[/]"));
+            machineGrid.AddRow(new Markup($"[dim]  OS[/] [bold]{machineInfo.OSVersion}[/]"));
 
-        [DllImport("kernel32.dll", ExactSpelling = true)]
-        private static extern IntPtr GetConsoleWindow();
+            Spectre.Console.Panel machinePanel = new(Align.Center(machineGrid, VerticalAlignment.Top))
+            {
+                Header = new PanelHeader("// Machine Info //").Centered(),
+                Padding = new Spectre.Console.Padding(2, 1, 2, 1),
+                Border = BoxBorder.Heavy,
+            };
+            return machinePanel;
+        }
+        static Spectre.Console.Panel CreateCPUPanel(CPUInfo cpuInfo)
+        {
+            Grid cpuGrid = new();
+            cpuGrid.AddColumn();
+
+            cpuGrid.AddRow(new Markup($"[dim]NAME[/] [bold]{cpuInfo.Name}[/]"));
+
+            Spectre.Console.Panel gpuPanel = new(Align.Center(cpuGrid, VerticalAlignment.Top))
+            {
+                Header = new PanelHeader("// CPU Info //").Centered(),
+                Padding = new Spectre.Console.Padding(2, 1, 2, 1),
+                Border = BoxBorder.Heavy,
+                Expand = true,
+            };
+            return gpuPanel;
+        }
+        static Spectre.Console.Panel CreateGPUPanel(GPUInfo gpuInfo)
+        {
+            Grid gpuGrid = new();
+            gpuGrid.AddColumn();
+
+            gpuGrid.AddRow(new Markup($"[dim]  NAME[/] [bold]{gpuInfo.Name}[/]"));
+            gpuGrid.AddRow(new Markup($"[dim]DRIVER[/] [bold]{gpuInfo.DriverVersion}[/]"));
+
+            Spectre.Console.Panel gpuPanel = new(Align.Center(gpuGrid, VerticalAlignment.Top))
+            {
+                Header = new PanelHeader("// GPU Info //").Centered(),
+                Padding = new Spectre.Console.Padding(2, 1, 2, 1),
+                Border = BoxBorder.Heavy,
+                Expand = true,
+            };
+            return gpuPanel;
+        }
     }
 }
