@@ -31,18 +31,22 @@ namespace Glance
                         .SplitRows(
                             new Layout(CreateBatteryPanel(batteryInfo)).Size(5),
                             new Layout(CreateMachinePanel(machineInfo)).Size(7),
-                            new Layout("Bottom").Ratio(2)));
+                            new Layout(CreateCommandsPanel())));
             layout["Left"].Ratio(2);
-
             while (true)
             {
                 AnsiConsole.Write(layout);
 
-                var key = Console.ReadKey();
-                if (key.Key == ConsoleKey.Spacebar)
+                ConsoleKeyInfo key;
+                do
                 {
-                    Console.Clear();
+                    Console.CursorVisible = false;
+                    key = Console.ReadKey();
                 }
+                while (key.Key != ConsoleKey.Spacebar);
+
+                // Console.Clear() somehow does not clear screen completely, so I found this solution.
+                Console.Write("\f\u001bc\x1b[3J");
             }
         }
         static void InitWindow()
@@ -50,6 +54,25 @@ namespace Glance
             Console.OutputEncoding = Encoding.UTF8;
             Console.CursorVisible = false;
             Console.Title = "Glance";
+        }
+        static Spectre.Console.Panel CreateCommandsPanel()
+        {
+            Rows rows = new
+            (
+                new Markup("[bold]'C'[/]       [dim italic];Focus on CPU tab[/]"),
+                new Markup("[bold]'G'[/]       [dim italic];Focus on GPU tab[/]"),
+                new Markup("[bold]'←' / '→'[/] [dim italic];Next or previous object[/]"),
+                new Markup("[bold]'F5'[/]      [dim italic];Refresh screen[/]")
+            );
+            Spectre.Console.Panel commandsPanel = new(Align.Left(rows, VerticalAlignment.Top))
+            {
+                Header = new PanelHeader("[invert] Commands [/]").Centered(),
+                Padding = new Spectre.Console.Padding(2, 1, 2, 1),
+                Border = BoxBorder.Heavy,
+                Expand = true
+            };
+
+            return commandsPanel;
         }
         static Spectre.Console.Panel CreateBatteryPanel(BatteryInfo batteryInfo)
         {
@@ -86,7 +109,7 @@ namespace Glance
 
             Spectre.Console.Panel batteryPanel = new(Align.Center(batteryGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("// Battery Status //").Centered(),
+                Header = new PanelHeader("[invert] Battery [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
             };
@@ -97,13 +120,13 @@ namespace Glance
             Grid machineGrid = new();
             machineGrid.AddColumn();
 
-            machineGrid.AddRow(new Markup($"[dim]USER[/] [bold]{machineInfo.UserName}[/]"));
-            machineGrid.AddRow(new Markup($"[dim]CODE[/] [bold]{machineInfo.DesktopName}[/]"));
-            machineGrid.AddRow(new Markup($"[dim]  OS[/] [bold]{machineInfo.OSVersion}[/]"));
+            machineGrid.AddRow(new Markup($"[dim]USER[/] {machineInfo.UserName}"));
+            machineGrid.AddRow(new Markup($"[dim]CODE[/] {machineInfo.DesktopName}"));
+            machineGrid.AddRow(new Markup($"[dim]  OS[/] {machineInfo.OSVersion}"));
 
             Spectre.Console.Panel machinePanel = new(Align.Center(machineGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("// Machine Info //").Centered(),
+                Header = new PanelHeader("[invert] Machine [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
             };
@@ -118,7 +141,7 @@ namespace Glance
 
             Spectre.Console.Panel gpuPanel = new(Align.Center(cpuGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("// CPU Info //").Centered(),
+                Header = new PanelHeader("[invert] CPU [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
                 Expand = true,
@@ -135,7 +158,7 @@ namespace Glance
 
             Spectre.Console.Panel gpuPanel = new(Align.Center(gpuGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("// GPU Info //").Centered(),
+                Header = new PanelHeader("[invert] GPU [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
                 Expand = true,
