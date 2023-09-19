@@ -16,10 +16,10 @@ namespace Glance
             machineInfo.Update();
 
             CPUInfo cpuInfo = new();
-            cpuInfo.Update();
 
             GPUInfo gpuInfo = new();
-            gpuInfo.Update();
+
+            DiskInfo diskInfo = new();
 
             var layout = new Layout("Root")
                 .SplitColumns(
@@ -31,7 +31,8 @@ namespace Glance
                         .SplitRows(
                             new Layout(CreateBatteryPanel(batteryInfo)).Size(5),
                             new Layout(CreateMachinePanel(machineInfo)).Size(7),
-                            new Layout(CreateCommandsPanel())));
+                            new Layout(CreateDiskPanel(diskInfo)),
+                            new Layout(CreateCommandsPanel()).Size(9)));
             layout["Left"].Ratio(2);
             while (true)
             {
@@ -43,7 +44,7 @@ namespace Glance
                     Console.CursorVisible = false;
                     key = Console.ReadKey();
                 }
-                while (key.Key != ConsoleKey.Spacebar);
+                while (key.Key != ConsoleKey.F5);
 
                 // Console.Clear() somehow does not clear screen completely, so I found this solution.
                 Console.Write("\f\u001bc\x1b[3J");
@@ -62,11 +63,12 @@ namespace Glance
                 new Markup("[bold]'C'[/]       [dim italic];Focus on CPU tab[/]"),
                 new Markup("[bold]'G'[/]       [dim italic];Focus on GPU tab[/]"),
                 new Markup("[bold]'←' / '→'[/] [dim italic];Next or previous object[/]"),
-                new Markup("[bold]'F5'[/]      [dim italic];Refresh screen[/]")
+                new Markup("[bold]'F5'[/]      [dim italic];Refresh screen[/]"),
+                new Markup("[bold]'ESC'[/]     [dim italic];Visit GitHub[/]")
             );
             Spectre.Console.Panel commandsPanel = new(Align.Left(rows, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("[invert] Commands [/]").Centered(),
+                Header = new PanelHeader("[invert] COMMANDS [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
                 Expand = true
@@ -109,7 +111,7 @@ namespace Glance
 
             Spectre.Console.Panel batteryPanel = new(Align.Center(batteryGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("[invert] Battery [/]").Centered(),
+                Header = new PanelHeader("[invert] BATTERY [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
             };
@@ -126,7 +128,7 @@ namespace Glance
 
             Spectre.Console.Panel machinePanel = new(Align.Center(machineGrid, VerticalAlignment.Top))
             {
-                Header = new PanelHeader("[invert] Machine [/]").Centered(),
+                Header = new PanelHeader("[invert] MACHINE [/]").Centered(),
                 Padding = new Spectre.Console.Padding(2, 1, 2, 1),
                 Border = BoxBorder.Heavy,
             };
@@ -164,6 +166,36 @@ namespace Glance
                 Expand = true,
             };
             return gpuPanel;
+        }
+        static Spectre.Console.Panel CreateDiskPanel(DiskInfo diskInfo)
+        {
+            Grid diskGrid = new();
+            diskGrid.AddColumn();
+            diskGrid.AddColumn();
+            diskGrid.AddColumn();
+
+            for (int i = 0; i < diskInfo.Drives.Length; i++)
+            {
+                BreakdownChart chart = new()
+                {
+                    Width = 25,
+                };
+                chart.HideTags();
+                chart.AddItem("Busy", diskInfo.Drives[i].AvailableFreeSpace, Spectre.Console.Color.Orange1);
+                chart.AddItem("Free", diskInfo.Drives[i].TotalSize - diskInfo.Drives[i].AvailableFreeSpace, Spectre.Console.Color.Grey37);
+
+                diskGrid.AddRow(new Markup($":floppy_disk: {diskInfo.Drives[i].Name}"), chart, new Markup($"[orange1]{DiskInfo.ToGB(diskInfo.Drives[i].TotalSize - diskInfo.Drives[i].AvailableFreeSpace)}GB[/] / {DiskInfo.ToGB(diskInfo.Drives[i].TotalSize)}GB"));
+                if (i != diskInfo.Drives.Length - 1)
+                    diskGrid.AddRow();
+            }
+            Spectre.Console.Panel diskPanel = new(Align.Center(diskGrid, VerticalAlignment.Top))
+            {
+                Header = new PanelHeader("[invert] DISKS [/]").Centered(),
+                Padding = new Spectre.Console.Padding(2, 1, 2, 1),
+                Border = BoxBorder.Heavy,
+                Expand = true,
+            };
+            return diskPanel;
         }
     }
 }

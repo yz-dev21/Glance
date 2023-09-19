@@ -1,6 +1,6 @@
 ﻿namespace Glance
 {
-    internal struct BatteryInfo
+    internal class BatteryInfo
     {
         public int Percentage { get; private set; }
         public bool Charging { get; private set; }
@@ -17,7 +17,7 @@
             Percentage = (int)(powerStatus.BatteryLifePercent * 100);
             Charging = powerStatus.PowerLineStatus == PowerLineStatus.Online;
         }
-        public override readonly string ToString()
+        public override string ToString()
         {
             if (Charging)
                 return $"{Percentage}%, Charging";

@@ -9,12 +9,14 @@ namespace Glance
         public CPUInfo()
         {
             Name = string.Empty;
-        }
-        public void Update()
-        {
+
             var cpuName = (from x in new ManagementObjectSearcher("SELECT Name FROM Win32_Processor").Get().Cast<ManagementObject>()
                            select x.GetPropertyValue("Name")).FirstOrDefault();
             Name = cpuName != null ? cpuName.ToString() : "Unknown";
+        }
+        public void Update()
+        {
+
         }
     }
 }
